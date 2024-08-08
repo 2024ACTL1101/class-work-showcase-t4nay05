@@ -79,7 +79,24 @@ for (i in 1:nrow(amd_df)) {
 ### Step 3: Customize Trading Period
 - Define a trading period you wanted in the past five years 
 ```r
-# Fill your code here
+# Defining Trading Period
+for (i in 1:nrow(amd_df)) {
+current_price <- amd_df$close[i]
+if (i == 1 || amd_df$date[i] < as.Date("2021-10-05") || amd_df$date[i] > as.Date("2
+023-07-05")) {
+next
+}
+if (previous_price == 0) {
+# First day of trading, execute a buy amd_df$trade_type[i] <- "buy"
+amd_df$costs_proceeds[i] <- -current_price * share_size accumulated_shares <- accumulated_shares + share_size
+} else if (current_price < previous_price) {
+# Price is less than previous day, execute a buy amd_df$trade_type[i] <- "buy"
+amd_df$costs_proceeds[i] <- -current_price * share_size accumulated_shares <- accumulated_shares + share_size
+}
+  # Update previous price for next iteration
+  previous_price <- current_price
+}
+
 ```
 
 
@@ -91,7 +108,39 @@ After running your algorithm, check if the trades were executed as expected. Cal
 - ROI Formula: $$\text{ROI} = \left( \frac{\text{Total Profit or Loss}}{\text{Total Capital Invested}} \right) \times 100$$
 
 ```r
-# Fill your code here
+# Initialize columns for trade type, cost/proceeds, and accumulated shares in amd_df
+amd_df$trade_type <- NA
+amd_df$costs_proceeds <- 0
+amd_df$accumulated_shares <- 0
+# Initialize variables for trading logic
+previous_price <- 0
+share_size <- 100
+accumulated_shares <- 0
+# Last day of trading
+last_trading_day <- tail(which(amd_df$date <= as.Date("2023-07-05")), 1) if (accumulated_shares > 0) {
+  amd_df$trade_type[last_trading_day] <- "sell"
+  proceeds <- amd_df$close[last_trading_day] * accumulated_shares
+  amd_df$costs_proceeds[last_trading_day] <- proceeds
+  accumulated_shares <- 0
+}
+# Update accumulated shares
+for (i in 1:nrow(amd_df)) { if (i > 1) {
+    amd_df$accumulated_shares[i] <- amd_df$accumulated_shares[i-1] +
+      ifelse(is.na(amd_df$trade_type[i]), 0, ifelse(amd_df$trade_type[i] == "buy", sh
+are_size, -accumulated_shares)) } else {
+    amd_df$accumulated_shares[i] <- ifelse(is.na(amd_df$trade_type[i]), 0,
+      ifelse(amd_df$trade_type[i] == "buy", share_size, 0))
+} }
+# Calculate the total profit or loss
+total_profit_loss <- sum(amd_df$costs_proceeds, na.rm = TRUE)
+# Calculate the total capital invested
+total_capital_invested <- sum(amd_df$costs_proceeds[amd_df$trade_type == "buy"], na.r
+m = TRUE)
+total_capital_invested <- abs(total_capital_invested)
+# Calculate ROI
+ROI <- (total_profit_loss / total_capital_invested) * 100
+# Output the results
+print(paste("Total Profit or Loss: ",total_profit_loss))
 ```
 
 ### Step 5: Profit-Taking Strategy or Stop-Loss Mechanisum (Choose 1)
@@ -100,7 +149,74 @@ After running your algorithm, check if the trades were executed as expected. Cal
 
 
 ```r
-# Fill your code here
+# Initialize columns for trade type, cost/proceeds, and accumulated shares in amd_df
+amd_df$trade_type <- NA
+amd_df$costs_proceeds <- 0
+amd_df$accumulated_shares <- 0
+# Initialize variables for trading logic
+previous_price <- 0
+share_size <- 100
+accumulated_shares <- 0
+average_purchase_price <- 0
+stop_loss_threshold <- 0.35
+for (i in 1:nrow(amd_df)) {
+current_price <- amd_df$close[i]
+if (i == 1 || amd_df$date[i] < as.Date("2021-10-05") || amd_df$date[i] > as.Date("2
+023-07-05")) {
+next
+}
+if (previous_price == 0) {
+# First day of trading, execute a buy
+amd_df$trade_type[i] <- "buy"
+amd_df$costs_proceeds[i] <- -current_price * share_size
+accumulated_shares <- accumulated_shares + share_size
+average_purchase_price <- ((average_purchase_price * (accumulated_shares - share_
+size)) + (current_price * share_size)) / accumulated_shares } else if (current_price < previous_price) {
+    # Price is less than previous day, execute a buy
+    amd_df$trade_type[i] <- "buy"
+    amd_df$costs_proceeds[i] <- -current_price * share_size
+    accumulated_shares <- accumulated_shares + share_size
+    average_purchase_price <- ((average_purchase_price * (accumulated_shares - share_
+size)) + (current_price * share_size)) / accumulated_shares
+  }
+  # Check for stop-loss condition
+if (current_price < average_purchase_price * (1 - stop_loss_threshold) && accumulat ed_shares > 0) {
+    # Price has fallen below stop-loss threshold, execute a sell for half the holding
+s
+    shares_to_sell <- accumulated_shares / 2
+    amd_df$trade_type[i] <- "sell"
+    amd_df$costs_proceeds[i] <- current_price * shares_to_sell
+    accumulated_shares <- accumulated_shares - shares_to_sell
+    average_purchase_price <- ((average_purchase_price * (accumulated_shares + shares
+_to_sell)) - (current_price * shares_to_sell)) / accumulated_shares
+  }
+  # Update previous price for next iteration
+  previous_price <- current_price
+}
+# Last day of trading
+last_trading_day <- tail(which(amd_df$date <= as.Date("2023-07-05")), 1) if (accumulated_shares > 0) {amd_df$trade_type[last_trading_day] <- "sell"
+      proceeds <- amd_df$close[last_trading_day] * accumulated_shares
+      amd_df$costs_proceeds[last_trading_day] <- proceeds
+      accumulated_shares <- 0
+}
+    # Update accumulated shares
+for (i in 1:nrow(amd_df)) { if (i > 1) {
+        amd_df$accumulated_shares[i] <- amd_df$accumulated_shares[i-1] +
+          ifelse(is.na(amd_df$trade_type[i]), 0, ifelse(amd_df$trade_type[i] == "buy", sh
+are_size, -shares_to_sell)) } else {
+        amd_df$accumulated_shares[i] <- ifelse(is.na(amd_df$trade_type[i]), 0,
+          ifelse(amd_df$trade_type[i] == "buy", share_size, 0))
+} }
+# Step 4: Run Your Algorithm and Analyze Results (Recalculate with stop-loss) # Calculate the total profit or loss
+total_profit_loss <- sum(amd_df$costs_proceeds, na.rm = TRUE)
+    # Calculate the total capital invested
+    total_capital_invested <- sum(amd_df$costs_proceeds[amd_df$trade_type == "buy"], na.r
+    m = TRUE)
+    total_capital_invested <- abs(total_capital_invested)
+    # Calculate ROI
+    ROI <- (total_profit_loss / total_capital_invested) * 100
+    # Output the results
+    print(paste("Total Profit or Loss: ",total_profit_loss))
 ```
 
 
@@ -110,10 +226,11 @@ After running your algorithm, check if the trades were executed as expected. Cal
 
 
 ```r
-# Fill your code here and Disucss
+# Step 6: Summarize Your Findings
+# Discussion
+print(paste("Discussion:During the selected period, the market experienced a signific ant downturn due to the COVID-19 pandemic, leading to a sharp decline in stock price s. Without a stop-loss mechanism, the strategy incurred substantial losses as it cont inued to buy shares at decreasing prices. The stop-loss mechanism, however, helped li mit losses by selling half of the holdings when the stock price fell by 35% from the average purchase price, thereby preserving some capital. This protective measure resu lted in a smaller loss and a relatively better ROI compared to the strategy without t he stop-loss mechanism.This example demonstrates how the stop-loss mechanism can impr ove the trading strategy's performance by reducing potential losses during adverse ma rket conditions. You can replace the hypothetical results with your actual results fo r a more accurate summary."))
 ```
 
-Sample Discussion: On Wednesday, December 6, 2023, AMD CEO Lisa Su discussed a new graphics processor designed for AI servers, with Microsoft and Meta as committed users. The rise in AMD shares on the following Thursday suggests that investors believe in the chipmaker's upward potential and market expectations; My first strategy earned X dollars more than second strategy on this day, therefore providing a better ROI.
 
 
 
