@@ -124,26 +124,6 @@ alpha <- coef(model)[1]
 beta
 
 ```
-##
-## Call:
-## lm(formula = AMD_Excess ~ GSPC_Excess, data = df)
-##
-## Residuals:
-##       Min        1Q    Median        3Q       Max
-## -0.095781 -0.014735 -0.001152  0.012276  0.173632
-##
-## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)
-## (Intercept) 0.0011041  0.0007243   1.524    0.128
-## GSPC_Excess 1.5699987  0.0540654  29.039   <2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-##
-## Residual standard error: 0.02567 on 1256 degrees of freedom
-## Multiple R-squared:  0.4017, Adjusted R-squared:  0.4012
-## F-statistic: 843.3 on 1 and 1256 DF,  p-value: < 2.2e-16
-## GSPC_Excess
-##    1.569999
 
 #### Interpretation
 
