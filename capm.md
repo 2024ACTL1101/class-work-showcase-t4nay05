@@ -81,7 +81,11 @@ $$
 $$
 
 ```r
-#fill the code
+# Calculate daily returns
+df <- df %>%
+  mutate(AMD_Return = (AMD / lag(AMD)) - 1,
+         GSPC_Return = (GSPC / lag(GSPC)) - 1) %>%
+  na.omit()
 ```
 
 - **Calculate Risk-Free Rate**: Calculate the daily risk-free rate by conversion of annual risk-free Rate. This conversion accounts for the compounding effect over the days of the year and is calculated using the formula:
@@ -91,36 +95,76 @@ $$
 $$
 
 ```r
-#fill the code
+# Convert annual risk-free rate to daily risk-free rate
+df <- df %>%
+  mutate(Daily_RF = (1 + RF / 100)^(1/360) - 1)
 ```
 
 
 - **Calculate Excess Returns**: Compute the excess returns for AMD and the S&P 500 by subtracting the daily risk-free rate from their respective returns.
 
 ```r
-#fill the code
+# Calculate excess returns
+df <- df %>%
+  mutate(AMD_Excess = AMD_Return - Daily_RF,
+         GSPC_Excess = GSPC_Return - Daily_RF)
 ```
 
 
 - **Perform Regression Analysis**: Using linear regression, we estimate the beta (\(\beta\)) of AMD relative to the S&P 500. Here, the dependent variable is the excess return of AMD, and the independent variable is the excess return of the S&P 500. Beta measures the sensitivity of the stock's returns to fluctuations in the market.
 
 ```r
-#fill the code
-```
+# Perform linear regression to estimate beta
+model <- lm(AMD_Excess ~ GSPC_Excess, data = df)
+summary(model)
+# Extract beta and alpha from the model
+beta <- coef(model)[2]
+alpha <- coef(model)[1]
+# Print the beta value
+beta
 
+```
+##
+## Call:
+## lm(formula = AMD_Excess ~ GSPC_Excess, data = df)
+##
+## Residuals:
+##       Min        1Q    Median        3Q       Max
+## -0.095781 -0.014735 -0.001152  0.012276  0.173632
+##
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)
+## (Intercept) 0.0011041  0.0007243   1.524    0.128
+## GSPC_Excess 1.5699987  0.0540654  29.039   <2e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+##
+## Residual standard error: 0.02567 on 1256 degrees of freedom
+## Multiple R-squared:  0.4017, Adjusted R-squared:  0.4012
+## F-statistic: 843.3 on 1 and 1256 DF,  p-value: < 2.2e-16
+## GSPC_Excess
+##    1.569999
 
 #### Interpretation
 
 What is your \(\beta\)? Is AMD more volatile or less volatile than the market?
 
-**Answer:**
+**Answer: The beta value of 1.569999 indicates the volatility of AMD relative to the market. As beta is greater than 1, AMD is more volatile than the market, suggesting that AMD’s stock price tends to move more than the market (S&P 500) in response to market changes.**
 
 
 #### Plotting the CAPM Line
 Plot the scatter plot of AMD vs. S&P 500 excess returns and add the CAPM regression line.
 
 ```r
-#fill the code
+# Scatter plot with regression line
+ggplot(df, aes(x = GSPC_Excess, y = AMD_Excess)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "blue") +
+  labs(title = "CAPM: AMD vs S&P 500 Excess Returns",
+       x = "S&P 500 Excess Return",
+       y = "AMD Excess Return") +
+  theme_minimal()
+## `geom_smooth()` using formula = 'y ~ x'
 ```
 
 ### Step 3: Predictions Interval
@@ -128,8 +172,25 @@ Suppose the current risk-free rate is 5.0%, and the annual expected return for t
 
 
 
-**Answer:**
+**Answer: Based on the provided output, the expected annual return for AMD is approximately 18.03%. The 90% prediction interval for AMD’s annual expected return ranges from approximately -48.996% to 85.058%. This means there is a 90% chance that AMD’s annual return will fall within this range.**
 
 ```r
-#fill the code
+# Define risk-free rate and expected market return
+Rf <- 0.05
+Rm <- 0.133
+# Calculate annual beta and alpha
+annual_beta <- beta
+annual_alpha <- alpha * 252 # Converting daily alpha to annual
+# Calculate expected return for AMD using CAPM
+expected_return_AMD <- Rf + annual_beta * (Rm - Rf)
+# Calculate standard error of the forecast
+sf <- summary(model)$sigma
+annual_sf <- sf * sqrt(252)
+# Calculate 90% prediction interval
+z_score <- qnorm(0.95)
+lower_bound <- expected_return_AMD - z_score * annual_sf
+upper_bound <- expected_return_AMD + z_score * annual_sf
+list(Expected_Return_AMD = expected_return_AMD,
+     Lower_Bound = lower_bound,
+     Upper_Bound = upper_bound)
 ```
